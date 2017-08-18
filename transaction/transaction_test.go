@@ -10,6 +10,7 @@ import (
 
 // Build a custom transaction type:
 type Transfer struct {
+  From, To string
   Value int
   Coin string
 }
@@ -34,7 +35,7 @@ func TestTransaction(t *testing.T) {
   him := "c.veloso.mg@gmail.com"
 
   // Make a transaction:
-  t1, h1 := log1.Make(me, him, Transfer{100,"US$"})
+  t1, h1 := log1.Make(Transfer{me, him, 100,"US$"})
   fmt.Printf("\n%v\n", t1)
   fmt.Printf("%x\n", h1.Sum(nil))
 
@@ -42,8 +43,8 @@ func TestTransaction(t *testing.T) {
   fmt.Printf("%x\n\n", h2.Sum(nil))
 
   // Commit the transactions by exchanging trust_keys:
-  log1.Commit(h2)
-  log2.Commit(h1)
+  log1.Commit(Signature{him, h2})
+  log2.Commit(Signature{me, h1})
 
   // Now read both files to check for correctess:
   f1, err := ioutil.ReadFile("test1.log")
@@ -67,8 +68,8 @@ func TestTransaction(t *testing.T) {
   }
   i++
   // The third line must correspond to the hash code:
-  h1_s := fmt.Sprintf("%x", h1.Sum(nil))
-  h2_s := fmt.Sprintf("%x", h2.Sum(nil))
+  h1_s := fmt.Sprintf("%s:%x", me, h1.Sum(nil))
+  h2_s := fmt.Sprintf("%s:%x", him, h2.Sum(nil))
   offset := i
   for i=0; f1[i] != '\n'; i++ {
     if f1[i+offset] != h2_s[i] {
