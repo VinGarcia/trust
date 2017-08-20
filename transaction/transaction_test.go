@@ -121,7 +121,7 @@ func TestNew(t *testing.T) {
         )
       })
 
-      Convey("It should make transactions", func() {
+      Convey("It should handle transactions", func() {
         // Mock time function so its value won't change:
         timeNow := now()
         now = func() time.Time {
@@ -133,31 +133,56 @@ func TestNew(t *testing.T) {
         me := "vingarcia00@gmail.com"
         him := "c.veloso.mg@gmail.com"
 
-        // Make a transaction:
-        t := Transfer{me, him, 100,"US$"}
-        instance, h1 := file.Make(t)
+        Convey("It should make transactions", func() {
+          // Make a transaction:
+          t := Transfer{me, him, 100,"US$"}
+          instance, h1 := file.Make(t)
 
-        So(instance.Op, ShouldResemble, t.name())
-        So(instance.OpInfo, ShouldResemble, t)
-        So(instance.SponsorList, ShouldEqual, nil)
-        So(instance.Date, ShouldEqual, timeNow)
+          So(instance.Op, ShouldResemble, t.name())
+          So(instance.OpInfo, ShouldResemble, t)
+          So(instance.SponsorList, ShouldEqual, nil)
+          So(instance.Date, ShouldEqual, timeNow)
 
-        // The log file should now contain the transaction:
-        bytes, err := jsonDump(instance)
-        So(err, ShouldEqual, nil)
-        So(string(file.content), ShouldResemble,
-          fmt.Sprintf("content\n%s\n", bytes),
-        )
+          // The log file should now contain the transaction:
+          bytes, err := jsonDump(instance)
+          So(err, ShouldEqual, nil)
+          So(string(file.content), ShouldResemble,
+            fmt.Sprintf("content\n%s\n", bytes),
+          )
 
-        // The hash of the instance should match
-        // the contents of the current log file:
-        h := sha256.New()
-        h.Write(file.content)
-        So(h1, ShouldResemble, h)
+          // The hash of the instance should match
+          // the contents of the current log file:
+          h := sha256.New()
+          h.Write(file.content)
+          So(h1, ShouldResemble, h)
+        })
+
+        Convey("It should accept transactions", func() {
+          // Make a transaction:
+          t := Transfer{me, him, 100,"US$"}
+          instance, _ := file.Make(t)
+
+          // Reset mockFile so we can use it
+          // as the other stakeholder's log:
+          mockFile = []byte("content\n")
+          file.content = []byte("content\n")
+
+          h2 := file.Accept(instance)
+
+          // The log file should now contain the transaction:
+          bytes, err := jsonDump(instance)
+          So(err, ShouldEqual, nil)
+          So(string(file.content), ShouldResemble,
+            fmt.Sprintf("content\n%s\n", bytes),
+          )
+
+          // The hash of the instance should match
+          // the contents of the current log file:
+          h := sha256.New()
+          h.Write(file.content)
+          So(h2, ShouldResemble, h)
+        })
       })
-    })
-
-    Convey("Testing transaction IO operations", func() {
     })
   })
 }
