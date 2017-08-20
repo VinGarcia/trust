@@ -10,6 +10,32 @@ import (
   "time"
 )
 
+/* * * * * Dependencies Abstraction: * * * * */
+
+var warn = func(f string, args ...interface{}) {
+  fmt.Println(args...)
+}
+
+var format = func(f string, args ...interface{}) string {
+  return fmt.Sprintf(f, args...)
+}
+
+var jsonDump = func(t interface{}) ([]byte, error) {
+  return json.Marshal(t)
+}
+
+var readFile = func(file_addr string) ([]byte, error) {
+  return ioutil.ReadFile(file_addr)
+}
+
+var writeFile = func(file_addr string, content []byte) error {
+  return ioutil.WriteFile(file_addr, content, 0644)
+}
+
+var now = func() time.Time {
+  return time.Now()
+}
+
 /**
  * Transaction File:
  *
@@ -26,12 +52,12 @@ import (
  *    for which a `[]byte` is enough
  */
 type File struct {
-  file_addr string
+  addr string
   content []byte
 }
 
 func New(file_addr string) *File {
-  content, _ := ioutil.ReadFile(file_addr)
+  content, _ := readFile(file_addr)
   return &File{file_addr, content}
 }
 
@@ -86,7 +112,7 @@ type Signature struct {
  */
 func (log *File) save() {
   // Save it to the file:
-  err := ioutil.WriteFile(log.file_addr, log.content, 0644)
+  err := writeFile(log.addr, log.content)
   if err != nil {
     panic(err)
   }
@@ -97,9 +123,9 @@ func (log *File) save() {
  * file's content, and reload it from disk.
  */
 func (log *File) Reload() {
-  data, err := ioutil.ReadFile(log.file_addr)
+  data, err := readFile(log.addr)
   if err != nil {
-    fmt.Printf("Could not read log file!")
+    warn("Could not read log file!")
     panic(err)
   }
 
@@ -125,7 +151,7 @@ func (log *File) push(line []byte) {
 func (log *File) Commit(sig ...Signature) {
   // Append the key received from the counter-part:
   for _, item := range sig {
-    hash := fmt.Sprintf("%s:%x", item.Author, item.Hash.Sum(nil))
+    hash := format("%s:%x", item.Author, item.Hash.Sum(nil))
     log.push([]byte(hash))
   }
 
@@ -143,7 +169,7 @@ func (log *File) Make(Op Op_t) (Instance, hash.Hash) {
   t := Instance {
     Op : Op.name(),
     OpInfo : Op,
-    Date : time.Now(),
+    Date : now(),
   }
 
   h := log.Accept(t)
@@ -160,7 +186,7 @@ func (log *File) Make(Op Op_t) (Instance, hash.Hash) {
  */
 func (log *File) Accept(t Instance) hash.Hash {
   // Convert the transaction to JSON:
-  bytes, err := json.Marshal(t)
+  bytes, err := jsonDump(t)
   if err != nil {
     panic(err)
   }
@@ -175,4 +201,3 @@ func (log *File) Accept(t Instance) hash.Hash {
   // And return it:
   return h
 }
-
