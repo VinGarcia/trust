@@ -128,34 +128,6 @@ func TestNew(t *testing.T) {
           return timeNow
         }
 
-        file1 := New("myfile")
-
-        me := "vingarcia00@gmail.com"
-        him := "c.veloso.mg@gmail.com"
-
-        // Make a transaction:
-        t := Transfer{me, him, 100,"US$"}
-        instance, h1 := file1.Make(t)
-
-        So(instance.Op, ShouldResemble, t.name())
-        So(instance.OpInfo, ShouldResemble, t)
-        So(instance.SponsorList, ShouldEqual, nil)
-        So(instance.Date, ShouldEqual, timeNow)
-
-        // The hash of the instance should match
-        // the contents of the current log file:
-        h := sha256.New()
-        h.Write(file1.content)
-        So(h1, ShouldResemble, h)
-      })
-
-      Convey("It should accept transactions", func() {
-        // Mock time function so its value won't change:
-        timeNow := now()
-        now = func() time.Time {
-          return timeNow
-        }
-
         file := New("myfile")
 
         me := "vingarcia00@gmail.com"
